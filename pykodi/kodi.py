@@ -1,3 +1,4 @@
+#/usr/bin/env python2
 import requests
 import json
 import logging
@@ -58,14 +59,12 @@ class Kodi(object):
         data["method"]= "Player.GetActivePlayers" 
         js = self.send(data)
         if len(js["result"])>0:
-            if len(js["result"]) == 1:
-                return js["result"][0] ## [{u'playerid': 0, u'type': u'audio'}]
-            else:
-                logger.warning("There are more than 1 player : %s" %str(js["result"]))
-                return js["result"][0]
+            for player in js["result"]:
+                if player["type"] == "audio":
+                    return js["result"][0] ## [{u'playerid': 0, u'type': u'audio'}]
         else:
-            logger.warning("There is no active player")
-            return []
+            self.logger.warning("There is no active player")
+        return []
 
     def toggle_player(self):
         """ Unpause the music if the player is paused or pause it if it is playing
@@ -103,7 +102,7 @@ class Kodi(object):
             toreturn = False
         return toreturn
 
-    def incrementalVolumeChange(self, direction="up"):
+    def incrementalVolumeChange(self, direction="up", increment=20):
         """ Increment or decrement the volume, based on current level """
         ## Get current level
         data=self.data.copy()
@@ -112,14 +111,38 @@ class Kodi(object):
         js = self.send(data)
         curlevel = int(js["result"]["volume"])
         self.logger.debug("Current sound level is %i"%curlevel)
-        newlevel = min(100, curlevel+20) if direction=="up" else max(10, curlevel-20)
+        newlevel = min(100, curlevel+increment) if direction=="up" else max(10, curlevel-increment)
         data = self.data.copy()
         data["method"] = "Application.SetVolume"
         data["params"] = {"volume":newlevel}
         js = self.send(data)
         returnedLevel = int(js["result"])
         self.logger.debug("New sound level is %i"%returnedLevel)
-        return True
+        return returnedLevel
+
+    def goPrevNext(self, direction="next"):
+        """ Go to the next song (direction="next") or the previous one (direction="previous")
+        return True or False depending on the success
+        """
+        player = self.get_active_player()
+        if player != []:
+            data = self.data.copy()
+            data["method"] = "Player.GoTo" 
+            data["params"] = {
+                    "playerid":player["playerid"],
+                    "to" : direction
+                }
+            js = self.send(data)
+            if js["result"] == "OK":
+                toreturn = True 
+                self.logger.debug("Successfully switched")
+            else :
+                toreturn = False
+                self.logger.warning("There has been a problem while switching: {}".format(js["result"]))
+        else:
+            #logger.warning("There is no active player")
+            toreturn = False
+        return toreturn
 
         
 
