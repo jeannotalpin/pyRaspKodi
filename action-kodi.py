@@ -38,7 +38,7 @@ VOCABULARY = {
             "gb":"Playing next song"
             },
         "oops":{
-            "fr":"Oula, quelque chose close !",
+            "fr":"Oula, je n'ai pas pu faire cette action. Pardon maitre !",
             "gb":"Oops, sorry: something went wrong..."
             },
         "unknown":{
@@ -123,11 +123,11 @@ class Template(object):
     # --> Master callback function, triggered everytime an intent is recognized
     def master_intent_callback(self, hermes, intent_message):
         coming_intent = intent_message.intent.intent_name
-        if "volumeUp" in coming_intent or "volumeDown" in coming_intent:
+        if "volumeup" in coming_intent.lower() or "volumedown" in coming_intent.lower():
             self.intent_volumeUpDownReceived(hermes, intent_message)
-        if "speakInterrupt" in coming_intent or "resumeMusic" in coming_intent:
+        if "speakinterrupt" in coming_intent.lower() or "resumemusic" in coming_intent.lower():
             self.intent_playPause(hermes, intent_message)
-        if "nextSong" in coming_intent or "previousSong" in coming_intent:
+        if "nextsong" in coming_intent.lower() or "previoussong" in coming_intent.lower():
             self.intent_prevNext(hermes, intent_message)
         else:
             self.intent_unknown(hermes, intent_message)
