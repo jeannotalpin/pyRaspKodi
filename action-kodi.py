@@ -125,7 +125,7 @@ class Template(object):
         coming_intent = intent_message.intent.intent_name
         if "volumeup" in coming_intent.lower() or "volumedown" in coming_intent.lower():
             self.intent_volumeUpDownReceived(hermes, intent_message)
-        if "speakinterrupt" in coming_intent.lower() or "resumemusic" in coming_intent.lower():
+        if "speakerinterrupt" in coming_intent.lower() or "resumemusic" in coming_intent.lower():
             self.intent_playPause(hermes, intent_message)
         if "nextsong" in coming_intent.lower() or "previoussong" in coming_intent.lower():
             self.intent_prevNext(hermes, intent_message)
