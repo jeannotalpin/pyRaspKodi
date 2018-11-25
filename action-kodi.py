@@ -40,6 +40,10 @@ VOCABULARY = {
         "oops":{
             "fr":"Oula, quelque chose close !",
             "gb":"Oops, sorry: something went wrong..."
+            },
+        "unknown":{
+            "fr":"Je ne connais pas cette intention : {}.",
+            "gb": "I don't know this intent: {}"
             }
         }
 
@@ -113,6 +117,9 @@ class Template(object):
             text = self.vocal["oops"]
         hermes.publish_end_session(intent_message.session_id, text)
 
+    def intent_unknown(self, hermes, intent_message):
+        hermes.publish_end_session(intent_message.session_id, self.vocal["unknown"].format(intent_message.intent.intent_name.lower()))
+
     # --> Master callback function, triggered everytime an intent is recognized
     def master_intent_callback(self, hermes, intent_message):
         coming_intent = intent_message.intent.intent_name
@@ -122,6 +129,9 @@ class Template(object):
             self.intent_playPause(hermes, intent_message)
         if "nextSong" in coming_intent or "previousSong" in coming_intent:
             self.intent_prevNext(hermes, intent_message)
+        else:
+            self.intent_unknown(hermes, intent_message)
+
 
         # more callback and if condition goes here...
 
