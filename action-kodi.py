@@ -30,8 +30,8 @@ class Template(object):
             self.config = None
 
         ## Prepare Kodi
-        host = self.config.get("global").get("kodiHost")
-        port = int(self.config.get("global").get("kodiPort"))
+        host = self.config.get("secret").get("kodihost")
+        port = int(self.config.get("secret").get("kodiport"))
         self.kodi = Kodi(host, port)
 
         # start listening to MQTT
