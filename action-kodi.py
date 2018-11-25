@@ -16,6 +16,36 @@ MQTT_IP_ADDR = "localhost"
 MQTT_PORT = 1883
 MQTT_ADDR = "{}:{}".format(MQTT_IP_ADDR, str(MQTT_PORT))
 
+VOCABULARY = {
+        "doneSoundLevel":{
+            "fr":"C'est fait. Le son est maintenant a {}",
+            "gb":"Done! The sound level is now {}"
+            },
+        "noActivePlayer":{
+            "fr":"Désolé, il n'y a pas de lecteur actif.",
+            "gb":"Sorry, there is no active player!"
+            },
+        "clarify":{
+            "fr":"Clarifie tes intentions !",
+            "gb":"Clarify your intentions!"
+            },
+        "previous":{
+            "fr":"Je reviens à la précédente...",
+            "gb":"Coming back..."
+            },
+        "next":{
+            "fr":"Je passe à la suivante",
+            "gb":"Playing next song"
+            },
+        "oops":{
+            "fr":"Oula, quelque chose close !",
+            "gb":"Oops, sorry: something went wrong..."
+            }
+        }
+
+
+
+
 class Template(object):
     """Class used to wrap action code with mqtt connection
         
@@ -34,6 +64,12 @@ class Template(object):
         port = int(self.config.get("secret").get("kodiport"))
         self.kodi = Kodi(host, port)
 
+        ## Language
+        self.lang = self.config.get("secret").get("lang")
+        self.vocal = {}
+        for v in VOCABULARY:
+            self.vocal[v] = VOCABULARY[v][self.lang]
+
         # start listening to MQTT
         self.start_blocking()
         
@@ -46,7 +82,7 @@ class Template(object):
             inc = int(slot[0].slot_value.value.value)
         direction = "up" if "up" in intent_message.intent.intent_name.lower() else "down"
         newL = self.kodi.incrementalVolumeChange(direction=direction, increment=inc)
-        hermes.publish_end_session(intent_message.session_id, "Done! The sound level is now {}".format(newL))
+        hermes.publish_end_session(intent_message.session_id, self.vocal["doneSoundLevel"].format(newL))
 
     def intent_playPause(self, hermes, intent_message):
         """ Toggle player (pause/play)
@@ -55,7 +91,7 @@ class Template(object):
         if self.kodi.toggle_player():
             text=None
         else:
-            text = "Sorry, there is no active player!"
+            text = self.vocal["noActivePlayer"]
         hermes.publish_end_session(intent_message.session_id, text)
 
     def intent_prevNext(self, hermes, intent_message):
@@ -67,13 +103,14 @@ class Template(object):
         elif "next" in intent_name:
             direction = "next"
         else:
-            hermes.publish_end_session(intent_message.session_id, "Clarify your intentions!".format(newL))
+            hermes.publish_end_session(intent_message.session_id, self.vocal["clarify"])
+
             return False
 
         if self.kodi.goPrevNext(direction=direction):
-            text = "Playing {} song.".format(direction)
+            text = self.vocal["previous"] if "previous" in direction else self.vocal["next"]
         else:
-            text = "Oops, sorry: something went wrong..."
+            text = self.vocal["oops"]
         hermes.publish_end_session(intent_message.session_id, text)
 
     # --> Master callback function, triggered everytime an intent is recognized

@@ -144,6 +144,20 @@ class Kodi(object):
             toreturn = False
         return toreturn
 
+    def getSongs(self):
+        """ Find all songs
+        """
+        data=self.data.copy()
+        data["method"] = "AudioLibrary.GetSongs"
+        data["params"] = {}
+        js = self.send(data)
+        for s in js["result"]["songs"]:
+            print s["label"]
+            if "quitte pas" in s["label"]:
+                print "Found!"
+                sys.exit()
+
+
         
 
 
@@ -161,4 +175,5 @@ if __name__ == "__main__":
     kod = Kodi("192.168.1.26", 8080, logger)
     #print kod.toggle_player()
     #print kod.stop_player()
-    print kod.incrementalVolumeChange("up")
+    #print kod.incrementalVolumeChange("up")
+    kod.getSongs()
