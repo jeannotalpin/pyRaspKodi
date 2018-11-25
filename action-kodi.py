@@ -18,31 +18,31 @@ MQTT_ADDR = "{}:{}".format(MQTT_IP_ADDR, str(MQTT_PORT))
 
 VOCABULARY = {
         "doneSoundLevel":{
-            "fr":"C'est fait. Le son est maintenant a {}",
+            "fr":u"C'est fait. Le son est maintenant a {}",
             "gb":"Done! The sound level is now {}"
             },
         "noActivePlayer":{
-            "fr":"Désolé, il n'y a pas de lecteur actif.",
+            "fr":u"Désolé, il n'y a pas de lecteur actif.",
             "gb":"Sorry, there is no active player!"
             },
         "clarify":{
-            "fr":"Clarifie tes intentions !",
+            "fr":u"Clarifie tes intentions !",
             "gb":"Clarify your intentions!"
             },
         "previous":{
-            "fr":"Je reviens à la précédente...",
+            "fr":u"Je reviens à la précédente...",
             "gb":"Coming back..."
             },
         "next":{
-            "fr":"Je passe à la suivante",
+            "fr":u"Je passe à la suivante",
             "gb":"Playing next song"
             },
         "oops":{
-            "fr":"Oula, je n'ai pas pu faire cette action. Pardon maitre !",
+            "fr":u"Oula, je n'ai pas pu faire cette action. Pardon maitre !",
             "gb":"Oops, sorry: something went wrong..."
             },
         "unknown":{
-            "fr":"Je ne connais pas cette intention : {}.",
+            "fr":u"Je ne connais pas cette intention : {}.",
             "gb": "I don't know this intent: {}"
             }
         }
