@@ -1,75 +1,97 @@
 #!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+
+from snipsTools import SnipsConfigParser
 from hermes_python.hermes import Hermes
+from hermes_python.ontology import *
 from pykodi.kodi import Kodi
+import io
 
+CONFIG_INI = "config.ini"
 
-#print('Intent {}'.format(intent_message.intent))
-#for (slot_value, slot) in intent_message.slots.items():
-#    print('Slot {} -> \n\tRaw: {} \tValue: {}'.format(slot_value, slot[0].raw_value, slot[0].slot_value.value.value))
-#hermes.publish_continue_session(intent_message.session_id, "But, prout prout prout or prout?", ["juandelasvacaciones:volumeUp"])
-#print "intent name=", intent_message.intent.intent_name
+# If this skill is supposed to run on the satellite,
+# please get this mqtt connection info from <config.ini>
+# Hint: MQTT server is always running on the master device
+MQTT_IP_ADDR = "localhost"
+MQTT_PORT = 1883
+MQTT_ADDR = "{}:{}".format(MQTT_IP_ADDR, str(MQTT_PORT))
 
-
-def volumeUpDownReceived(hermes, intent_message):
-    """ Increase or decrease volume. If user gives the increment, it is used otherwise a fixed one is used
+class Template(object):
+    """Class used to wrap action code with mqtt connection
+        
+        Please change the name refering to your application
     """
-    inc = 20
-    for (slot_value, slot) in intent_message.slots.items():
-        inc = int(slot[0].slot_value.value.value)
-    direction = "up" if "up" in intent_message.intent.intent_name.lower() else "down"
-    newL = kodi.incrementalVolumeChange(direction=direction, increment=inc)
-    hermes.publish_end_session(intent_message.session_id, "Done! The sound level is now {}".format(newL))
 
-def playPause(hermes, intent_message):
-    """ Toggle player (pause/play)
-    Say something in return only if there is no active player
-    """
-    if kodi.toggle_player():
-        text=None
-    else:
-        text = "Sorry, there is no active player!"
-    hermes.publish_end_session(intent_message.session_id, text)
+    def __init__(self):
+        # get the configuration if needed
+        try:
+            self.config = SnipsConfigParser.read_configuration_file(CONFIG_INI)
+        except :
+            self.config = None
 
-def prevNext(hermes, intent_message):
-    """ Go to next or previous song
-    """
-    intent_name = intent_message.intent.intent_name.lower()
-    if "previous" in intent_name:
-        direction = "previous"
-    elif "next" in intent_name:
-        direction = "next"
-    else:
-        hermes.publish_end_session(intent_message.session_id, "Clarify your intentions!".format(newL))
-        return False
+        ## Prepare Kodi
+        host = self.config.get("global").get("kodiHost")
+        port = int(self.config.get("global").get("kodiPort"))
+        self.kodi = Kodi(host, port)
 
-    if kodi.goPrevNext(direction=direction):
-        text = "Playing {} song.".format(direction)
-    else:
-        text = "Oops, sorry: something went wrong..."
-    hermes.publish_end_session(intent_message.session_id, text)
+        # start listening to MQTT
+        self.start_blocking()
+        
 
+    def intent_volumeUpDownReceived(self, hermes, intent_message):
+        """ Increase or decrease volume. If user gives the increment, it is used otherwise a fixed one is used
+        """
+        inc = 20
+        for (slot_value, slot) in intent_message.slots.items():
+            inc = int(slot[0].slot_value.value.value)
+        direction = "up" if "up" in intent_message.intent.intent_name.lower() else "down"
+        newL = self.kodi.incrementalVolumeChange(direction=direction, increment=inc)
+        hermes.publish_end_session(intent_message.session_id, "Done! The sound level is now {}".format(newL))
 
+    def intent_playPause(self, hermes, intent_message):
+        """ Toggle player (pause/play)
+        Say something in return only if there is no active player
+        """
+        if self.kodi.toggle_player():
+            text=None
+        else:
+            text = "Sorry, there is no active player!"
+        hermes.publish_end_session(intent_message.session_id, text)
 
-def allIntent(hermes, intent_message):
-    print "intent name=", intent_message.intent.intent_name
+    def intent_prevNext(self, hermes, intent_message):
+        """ Go to next or previous song
+        """
+        intent_name = intent_message.intent.intent_name.lower()
+        if "previous" in intent_name:
+            direction = "previous"
+        elif "next" in intent_name:
+            direction = "next"
+        else:
+            hermes.publish_end_session(intent_message.session_id, "Clarify your intentions!".format(newL))
+            return False
 
-host="192.168.1.26"
-port=8080
-kodi = Kodi(host, port)
-with Hermes('localhost:1883') as h:
-    #h = h.subscribe_intents(allIntent)
-    ## Volume
-    h = h.subscribe_intent("juandelasvacaciones:volumeUp", volumeUpDownReceived)
-    h = h.subscribe_intent("volumeDown", volumeUpDownReceived)
-    ## Play/Pause
-    h = h.subscribe_intent("speakerInterrupt", playPause)
-    h = h.subscribe_intent("resumeMusic", playPause)
-    ## Next/previous
-    h = h.subscribe_intent("nextSong", prevNext)
-    h = h.subscribe_intent("previousSong", prevNext)
-    h.start()
+        if self.kodi.goPrevNext(direction=direction):
+            text = "Playing {} song.".format(direction)
+        else:
+            text = "Oops, sorry: something went wrong..."
+        hermes.publish_end_session(intent_message.session_id, text)
 
+    # --> Master callback function, triggered everytime an intent is recognized
+    def master_intent_callback(self, hermes, intent_message):
+        coming_intent = intent_message.intent.intent_name
+        if "volumeUp" in coming_intent or "volumeDown" in coming_intent:
+            self.intent_volumeUpDownReceived(hermes, intent_message)
+        if "speakInterrupt" in coming_intent or "resumeMusic" in coming_intent:
+            self.intent_playPause(hermes, intent_message)
+        if "nextSong" in coming_intent or "previousSong" in coming_intent:
+            self.intent_prevNext(hermes, intent_message)
 
+        # more callback and if condition goes here...
 
+    # --> Register callback function and start MQTT
+    def start_blocking(self):
+        with Hermes(MQTT_ADDR) as h:
+            h.subscribe_intents(self.master_intent_callback).start()
 
-
+if __name__ == "__main__":
+    Template()

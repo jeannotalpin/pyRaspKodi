@@ -60,7 +60,7 @@ class Kodi(object):
         js = self.send(data)
         if len(js["result"])>0:
             for player in js["result"]:
-                if player["type"] == "audio":
+                if player["type"] == "audio" or player["type"] == "video":
                     return js["result"][0] ## [{u'playerid': 0, u'type': u'audio'}]
         else:
             self.logger.warning("There is no active player")
