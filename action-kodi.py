@@ -130,7 +130,8 @@ class Template(object):
         elif "nextsong" in coming_intent.lower() or "previoussong" in coming_intent.lower():
             self.intent_prevNext(hermes, intent_message)
         else:
-            self.intent_unknown(hermes, intent_message)
+            #self.intent_unknown(hermes, intent_message)
+            pass
 
 
         # more callback and if condition goes here...
